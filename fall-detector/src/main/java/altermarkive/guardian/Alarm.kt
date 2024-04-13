@@ -44,7 +44,7 @@ class Alarm private constructor(val context: Guardian) {
             val singleton = this.singleton
             if (singleton != null) {
                 val pool = singleton.pool
-                pool.play(singleton.id, 1.0f, 1.0f, 1, 3, 1.0f)
+                pool.play(singleton.id, 1.0f, 1.0f, 1, 0, 1.0f) // TODO: set to 3 loops
             }
         }
 

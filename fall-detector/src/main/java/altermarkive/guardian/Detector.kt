@@ -35,11 +35,11 @@ class Detector private constructor() : SensorEventListener {
         internal const val INTERVAL_MS = 20
         private const val DURATION_S = 10
         internal const val N = DURATION_S * 1000 / INTERVAL_MS
-        internal const val FALLING_WAIST_SV_TOT = 0.6
-        internal const val IMPACT_WAIST_SV_TOT = 2.0
-        internal const val IMPACT_WAIST_SV_D = 1.7
-        internal const val IMPACT_WAIST_SV_MAX_MIN = 2.0
-        internal const val IMPACT_WAIST_Z_2 = 1.5
+        internal const val FALLING_WAIST_SV_TOT = 0.8
+        internal const val IMPACT_WAIST_SV_TOT = 2.5
+        internal const val IMPACT_WAIST_SV_D = 2.0
+        internal const val IMPACT_WAIST_SV_MAX_MIN = 2.5
+        internal const val IMPACT_WAIST_Z_2 = 2.0
 
         private const val SPAN_MAX_MIN = 100 / INTERVAL_MS
         private const val SPAN_FALLING = 1000 / INTERVAL_MS
@@ -53,7 +53,7 @@ class Detector private constructor() : SensorEventListener {
         private const val FILTER_FACTOR_0 = -0.9565436765
         private const val FILTER_FACTOR_1 = +1.9555782403
 
-        private const val G = 1.0
+        private const val G = 2.0
 
         private const val LYING_AVERAGE_Z_LPF = 0.5
 
