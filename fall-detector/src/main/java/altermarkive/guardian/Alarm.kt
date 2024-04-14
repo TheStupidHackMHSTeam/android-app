@@ -1,6 +1,8 @@
 package altermarkive.guardian
 
 import android.Manifest
+import android.app.Notification
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -64,6 +66,19 @@ class Alarm private constructor(val context: Guardian) {
             return singleton
         }
 
+        private fun createNotificationChannel(context: Context): String {
+            val channelId = "fall-detector-alarm"
+            val channelName = "$channelId Alarm"
+            val channel = NotificationChannel(
+                channelId,
+                channelName, NotificationManager.IMPORTANCE_HIGH
+            )
+            channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            val service = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            service.createNotificationChannel(channel)
+            return channelId
+        }
+
         private fun siren(context: Context) {
             cancel = false
             loudest(context, AudioManager.STREAM_ALARM)
@@ -94,7 +109,7 @@ class Alarm private constructor(val context: Guardian) {
                 )
 
                 val builder =
-                    NotificationCompat.Builder(context, context.resources.getString(R.string.app))
+                    NotificationCompat.Builder(context, createNotificationChannel(context))
                 builder
                     .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setContentTitle("FALL DETECTED")
@@ -175,7 +190,7 @@ class Alarm private constructor(val context: Guardian) {
             )
 
             val builder =
-                NotificationCompat.Builder(context, context.resources.getString(R.string.app))
+                NotificationCompat.Builder(context, createNotificationChannel(context))
             builder
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("FALL DETECTED")

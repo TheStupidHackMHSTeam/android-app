@@ -19,14 +19,14 @@ class Guardian : Service() {
         Alarm.instance(this)
     }
 
-    private fun createNotificationChannel(): String {
+    private fun createLowPriorityNotificationChannel(): String {
         val channelId = resources.getString(R.string.app)
         val channelName = "$channelId Background Service"
         val channel = NotificationChannel(
             channelId,
-            channelName, NotificationManager.IMPORTANCE_HIGH
+            channelName, NotificationManager.IMPORTANCE_MIN
         )
-        channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
         val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         service.createNotificationChannel(channel)
         return channelId
@@ -34,14 +34,24 @@ class Guardian : Service() {
 
     @SuppressLint("UnspecifiedImmutableFlag")
     override fun onStartCommand(intent: Intent, flags: Int, startID: Int): Int {
-        val channelId = createNotificationChannel()
+        val channelId = createLowPriorityNotificationChannel()
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.app))
             .setContentText(getString(R.string.guardian))
             .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
+            .setSilent(true)
+            .setVibrate(null)
+            .setSound(null)
+            .setLights(0, 0, 0)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .build()
         startForeground(1, notification)
-        stopForeground(true)
         return START_STICKY
     }
 
