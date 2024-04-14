@@ -14,6 +14,7 @@ import android.webkit.WebView
 import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.preference.PreferenceManager
 
 class About : Fragment(), View.OnClickListener {
     private var binding: View? = null
@@ -37,8 +38,10 @@ class About : Fragment(), View.OnClickListener {
         if (R.id.emergency == view.id) {
             liveChatWebView.settings.domStorageEnabled = true
             liveChatWebView.settings.javaScriptEnabled = true
-            liveChatWebView.loadUrl("http://10.75.118.219:9090/chat/")
-            Alarm.alert(requireActivity().applicationContext)
+            val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireActivity())
+            val name = sharedPreferences.getString("name", "")
+            liveChatWebView.loadUrl("http://10.75.118.219:9090/chat/?user=${name.toString()}")
+//            Alarm.alert(requireActivity().applicationContext)
             val emergency = this.binding?.findViewById<View>(R.id.emergency) as Button
             emergency.visibility = View.GONE
         }

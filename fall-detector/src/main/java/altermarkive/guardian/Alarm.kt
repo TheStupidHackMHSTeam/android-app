@@ -216,14 +216,19 @@ class Alarm private constructor(val context: Guardian) {
                 override fun onTick(millisUntilFinished: Long) {
                     if (switch) {
                         switch = false
-                        val singleton = instance(context as Guardian)
-                        val pool = singleton.pool
+                        val singleton = this@Companion.singleton
 
                         // Gradually increase the volume of the alarm
-                        val volume = Helper.clamp(10000 - millisUntilFinished.toDouble(), 0.0, 10000.0, 0.001, VOLUME.toDouble()).toFloat()
+                        val volume = Helper.clamp(
+                            10000 - millisUntilFinished.toDouble(),
+                            0.0,
+                            10000.0,
+                            0.001,
+                            VOLUME.toDouble()
+                        ).toFloat()
                         Log.d("ms", millisUntilFinished.toString())
                         Log.d("Alarm", volume.toString())
-                        pool.play(singleton.id, volume, volume, 1, 0, 1.0f)
+                        singleton?.pool?.play(singleton.id, volume, volume, 1, 0, 1.0f)
                     } else {
                         switch = true
                     }
