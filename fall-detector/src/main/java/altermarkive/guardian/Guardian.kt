@@ -18,7 +18,6 @@ class Guardian : Service() {
         Alarm.instance(this)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(): String {
         val channelId = resources.getString(R.string.app)
         val channelName = "$channelId Background Service"
@@ -34,6 +33,7 @@ class Guardian : Service() {
 
     @SuppressLint("UnspecifiedImmutableFlag")
     override fun onStartCommand(intent: Intent, flags: Int, startID: Int): Int {
+        val channelId = createNotificationChannel()
         return START_STICKY
     }
 

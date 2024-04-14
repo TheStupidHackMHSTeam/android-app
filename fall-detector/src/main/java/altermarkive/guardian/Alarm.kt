@@ -3,10 +3,8 @@ package altermarkive.guardian
 import android.Manifest
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioManager
@@ -14,25 +12,23 @@ import android.media.SoundPool
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import androidx.annotation.RequiresApi
+import android.util.Log
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import java.net.HttpURLConnection
 import java.net.URL
 
 
 class Alarm private constructor(val context: Guardian) {
-    class CancelReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == "CANCEL") {
-                Alarm.cancel = true
-            }
-        }
-    }
-
     private var pool: SoundPool
     private var id: Int
 
@@ -51,10 +47,6 @@ class Alarm private constructor(val context: Guardian) {
             pool = SoundPool(5, AudioManager.STREAM_ALARM, 0)
         }
         id = pool.load(context.applicationContext, R.raw.alarm, 1)
-
-        val filter = IntentFilter()
-        filter.addAction("CANCEL")
-        context.registerReceiver(CancelReceiver(), filter)
     }
 
     companion object {
@@ -71,7 +63,6 @@ class Alarm private constructor(val context: Guardian) {
             return singleton
         }
 
-        @RequiresApi(Build.VERSION_CODES.M)
         private fun siren(context: Context) {
             cancel = false
             loudest(context, AudioManager.STREAM_ALARM)
@@ -84,13 +75,25 @@ class Alarm private constructor(val context: Guardian) {
                     action = "CANCEL"
                     addCategory(Intent.CATEGORY_DEFAULT)
                 }
-                val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                )
 
                 val fullScreenIntent = Intent(context, Main::class.java)
-                fullScreenIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+                fullScreenIntent.flags =
+                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                val fullScreenPendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    fullScreenIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                )
 
-                val builder = NotificationCompat.Builder(context, context.resources.getString(R.string.app))
+                val builder =
+                    NotificationCompat.Builder(context, context.resources.getString(R.string.app))
                 builder
                     .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setContentTitle("FALL DETECTED")
@@ -106,7 +109,8 @@ class Alarm private constructor(val context: Guardian) {
                     notify(0, builder.build())
                 }
 
-                val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val mNotificationManager =
+                    context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
                 while (true) {
                     if (cancel) {
@@ -127,12 +131,14 @@ class Alarm private constructor(val context: Guardian) {
                         break
                     }
 
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        vibrator.vibrate(VibrationEffect.createOneShot(1200, VibrationEffect.DEFAULT_AMPLITUDE))
-                    } else {
-                        vibrator.vibrate(1200)
-                    }
-                    pool.play(singleton.id, 1f, 1f, 1, 0, 1.0f)
+                    vibrator.vibrate(
+                        VibrationEffect.createOneShot(
+                            1200,
+                            VibrationEffect.DEFAULT_AMPLITUDE
+                        )
+                    )
+
+                    pool.play(singleton.id, 0.01f, 0.01f, 1, 0, 1.0f)
 
                     Thread.sleep(1500)
                 }
@@ -145,19 +151,9 @@ class Alarm private constructor(val context: Guardian) {
             manager.setStreamVolume(stream, loudest, 0)
         }
 
-        @RequiresApi(Build.VERSION_CODES.M)
         internal fun alert(context: Context, siren: Boolean = false) {
-            val url = URL("http://192.168.19.177:9090/reportfall")
-
-            with(url.openConnection() as HttpURLConnection) {
-                requestMethod = "POST"
-                setRequestProperty("Content-Type", "application/json; utf-8")
-                setRequestProperty("Accept", "application/json")
-                doOutput = true
-
-                fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-
-                var location = if (ActivityCompat.checkSelfPermission(
+            CoroutineScope(Dispatchers.IO).launch {
+                if (ActivityCompat.checkSelfPermission(
                         context,
                         Manifest.permission.ACCESS_FINE_LOCATION
                     ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
@@ -165,27 +161,67 @@ class Alarm private constructor(val context: Guardian) {
                         Manifest.permission.ACCESS_COARSE_LOCATION
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
-                    return
-                } else {
-                    val locationTask = fusedLocationClient.lastLocation
+                    Toast.makeText(
+                        context,
+                        "Missing location permission. Cannot send fall report.",
+                        Toast.LENGTH_SHORT
+                    ).show()
 
-                    locationTask.addOnSuccessListener { location ->
-                        if (location != null) {
-                            val sharedPreferences = context.getSharedPreferences("altermarkive.guardian_preferences", Context.MODE_PRIVATE)
+                    ActivityCompat.requestPermissions(
+                        context as Main,
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        1
+                    )
+                    return@launch
+                } else {
+                    fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val sharedPreferences = context.getSharedPreferences(
+                                "altermarkive.guardian_preferences",
+                                Context.MODE_PRIVATE
+                            )
                             val name = sharedPreferences.getString("name", "Unknown") ?: "Unknown"
-                            val jsonInputString = "{\"lat\": ${location.latitude}, \"lng\": ${location.longitude}, \"name\": \"${name}\"}"
-                            outputStream.use { os ->
-                                val input = jsonInputString.toByteArray(charset("utf-8"))
-                                os.write(input, 0, input.size)
+
+                            val requestBody = """
+                        {
+                            "lat": ${location.latitude},
+                            "lng": ${location.longitude},
+                            "name": "${name}"
+                        }
+                    """.trimIndent()
+                            val client = OkHttpClient()
+                            val request = okhttp3.Request.Builder()
+                                .url("http://10.75.118.219:9090/reportfall")
+                                .post(okhttp3.RequestBody.create(null, requestBody))
+                                .build()
+                            val response = client.newCall(request).execute()
+                            val responseCode = response.code
+                            Log.d("Alarm", responseCode.toString())
+                            if (responseCode == 200) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(context, "Fall report sent", Toast.LENGTH_SHORT)
+                                        .show()
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to send fall report",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                }
                             }
                         }
                     }
                 }
-
             }
 
-            if (siren) {
-                siren(context)
+            CoroutineScope(Dispatchers.Default).launch {
+                if (siren) {
+                    siren(context)
+                }
             }
         }
     }

@@ -37,8 +37,8 @@ class About : Fragment(), View.OnClickListener {
         if (R.id.emergency == view.id) {
             liveChatWebView.settings.domStorageEnabled = true
             liveChatWebView.settings.javaScriptEnabled = true
-            liveChatWebView.loadUrl("http://192.168.19.117:9090")
-            Alarm.alert(requireActivity().applicationContext)
+            liveChatWebView.loadUrl("http://10.75.118.219:9090/chat/")
+//            Alarm.alert(requireActivity().applicationContext)
             val emergency = this.binding?.findViewById<View>(R.id.emergency) as Button
             emergency.visibility = View.GONE
         }
