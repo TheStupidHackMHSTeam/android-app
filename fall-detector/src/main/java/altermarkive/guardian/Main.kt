@@ -13,7 +13,7 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class Main : AppCompatActivity() {
-    fun checkForSetName() {
+    private fun checkForSetName() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         val name = sharedPreferences.getString("name", "")
         if (name.isNullOrEmpty()) {
@@ -25,12 +25,12 @@ class Main : AppCompatActivity() {
             val input = EditText(this)
             builder.setView(input)
 
-            builder.setPositiveButton("OK") { dialog, which ->
-                val name = input.text.toString()
-                sharedPreferences.edit().putString("name", name).apply()
+            builder.setPositiveButton("OK") { _, _ ->
+                val nameIn = input.text.toString()
+                sharedPreferences.edit().putString("name", nameIn).apply()
             }
 
-            builder.setNegativeButton("Cancel") { dialog, which ->
+            builder.setNegativeButton("Cancel") { dialog, _ ->
                 dialog.cancel()
             }
 

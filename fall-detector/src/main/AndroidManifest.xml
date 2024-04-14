@@ -122,13 +122,6 @@
                 <action android:name="altermarkive.guardian.Guardian" />
             </intent-filter>
         </service>
-        <service android:name=".PopupService"
-            android:exported="false"
-            android:label="Popup Service">
-            <intent-filter>
-                <action android:name="altermarkive.guardian.PopupService" />
-            </intent-filter>
-        </service>
     </application>
 
 </manifest>
