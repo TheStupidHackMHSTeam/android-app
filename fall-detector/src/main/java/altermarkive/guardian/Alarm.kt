@@ -226,8 +226,6 @@ class Alarm private constructor(val context: Guardian) {
                             0.001,
                             VOLUME.toDouble()
                         ).toFloat()
-                        Log.d("ms", millisUntilFinished.toString())
-                        Log.d("Alarm", volume.toString())
                         singleton?.pool?.play(singleton.id, volume, volume, 1, 0, 1.0f)
                     } else {
                         switch = true
@@ -261,6 +259,7 @@ class Alarm private constructor(val context: Guardian) {
                         if (notification.id == 2) {
                             mNotificationManager.cancel(2)
                             notifFound = true
+                            break
                         }
                     }
 
