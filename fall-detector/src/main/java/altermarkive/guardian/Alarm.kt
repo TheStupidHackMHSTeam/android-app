@@ -54,6 +54,8 @@ class Alarm private constructor(val context: Guardian) {
         private var singleton: Alarm? = null
         private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+        private const val volume = 0.01f;
+
         internal fun instance(context: Guardian): Alarm {
             var singleton = this.singleton
             if (singleton == null) {
@@ -100,7 +102,7 @@ class Alarm private constructor(val context: Guardian) {
                     .setContentText("Fall Detected!!! Clear the notification to stop the alarm.")
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setContentIntent(pendingIntent)
-                    .setAutoCancel(false)
+                    .setAutoCancel(true)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setFullScreenIntent(fullScreenPendingIntent, true)
                     .setSilent(false)
@@ -138,7 +140,7 @@ class Alarm private constructor(val context: Guardian) {
                         )
                     )
 
-                    pool.play(singleton.id, 0.01f, 0.01f, 1, 0, 1.0f)
+                    pool.play(singleton.id, volume, volume, 1, 0, 1.0f)
 
                     Thread.sleep(1500)
                 }

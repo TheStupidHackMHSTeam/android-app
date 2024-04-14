@@ -16,6 +16,7 @@ import android.view.View
 import android.view.WindowManager
 import android.webkit.WebView
 import android.widget.Button
+import kotlin.math.abs
 import kotlin.math.sqrt
 
 class Detector private constructor() : SensorEventListener {
@@ -242,11 +243,8 @@ class Detector private constructor() : SensorEventListener {
             if (LYING_AVERAGE_Z_LPF < (sum / count)) {
                 lying[at] = 1.0
                 val context = this.context as Context
-//                val context = Guardian.initiate(this.context as Context)
-                if (context != null) {
-                    Guardian.say(context, android.util.Log.WARN, TAG, "Detected a fall")
-                    alert(context)
-                }
+                Guardian.say(context, android.util.Log.WARN, TAG, "Detected a fall")
+                alert(context)
             }
         }
     }
@@ -285,7 +283,8 @@ class Detector private constructor() : SensorEventListener {
             val postTime: Long = event.timestamp / 1000000
             val postX = event.values[0].toDouble() / SensorManager.STANDARD_GRAVITY
             val postY = event.values[1].toDouble() / SensorManager.STANDARD_GRAVITY
-            val postZ = event.values[2].toDouble() / SensorManager.STANDARD_GRAVITY
+            var postZ = event.values[2].toDouble() / SensorManager.STANDARD_GRAVITY
+            postZ = abs(postZ)
             protect(postTime, postX, postY, postZ)
             anteTime = postTime
             anteX = postX

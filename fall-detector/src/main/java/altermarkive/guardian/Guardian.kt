@@ -9,6 +9,7 @@ import android.os.IBinder
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 class Guardian : Service() {
     override fun onCreate() {
@@ -34,6 +35,13 @@ class Guardian : Service() {
     @SuppressLint("UnspecifiedImmutableFlag")
     override fun onStartCommand(intent: Intent, flags: Int, startID: Int): Int {
         val channelId = createNotificationChannel()
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle(getString(R.string.app))
+            .setContentText(getString(R.string.guardian))
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .build()
+        startForeground(1, notification)
+        stopForeground(true)
         return START_STICKY
     }
 
@@ -44,11 +52,7 @@ class Guardian : Service() {
     companion object {
         internal fun initiate(context: Context) {
             val intent = Intent(context, Guardian::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            context.startForegroundService(intent)
         }
 
         internal fun say(context: Context, level: Int, tag: String, message: String) {
