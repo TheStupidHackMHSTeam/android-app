@@ -55,7 +55,7 @@ class Alarm private constructor(val context: Guardian) {
         private var singleton: Alarm? = null
         private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-        private const val VOLUME = 0.01f
+        private const val VOLUME = 1f
 
         internal fun instance(context: Guardian): Alarm {
             var singleton = this.singleton
