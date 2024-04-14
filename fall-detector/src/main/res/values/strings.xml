@@ -15,6 +15,7 @@
     <string name="cancel">Cancel</string>
     <string name="sendhelp">Send Help!</string>
     <string name="emergency">Emergency Live Chat</string>
+    <string name="panic">Panic</string>
     <string name="grant">Grant Permissions</string>
     <string name="live">Live</string>
     <string name="collection">Collection</string>
