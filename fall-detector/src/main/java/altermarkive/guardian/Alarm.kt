@@ -10,6 +10,7 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.SoundPool
 import android.os.Build
+import android.os.CountDownTimer
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
@@ -24,8 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import java.net.HttpURLConnection
-import java.net.URL
 
 
 class Alarm private constructor(val context: Guardian) {
@@ -54,7 +53,7 @@ class Alarm private constructor(val context: Guardian) {
         private var singleton: Alarm? = null
         private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-        private const val volume = 0.01f;
+        private const val VOLUME = 0.01f
 
         internal fun instance(context: Guardian): Alarm {
             var singleton = this.singleton
@@ -140,7 +139,7 @@ class Alarm private constructor(val context: Guardian) {
                         )
                     )
 
-                    pool.play(singleton.id, volume, volume, 1, 0, 1.0f)
+                    pool.play(singleton.id, VOLUME, VOLUME, 1, 0, 1.0f)
 
                     Thread.sleep(1500)
                 }
@@ -154,77 +153,175 @@ class Alarm private constructor(val context: Guardian) {
         }
 
         internal fun alert(context: Context, siren: Boolean = false) {
-            CoroutineScope(Dispatchers.IO).launch {
-                if (ActivityCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    Toast.makeText(
-                        context,
-                        "Missing location permission. Cannot send fall report.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+            val intent = Intent().apply {
+                action = "CANCEL"
+                addCategory(Intent.CATEGORY_DEFAULT)
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
 
-                    ActivityCompat.requestPermissions(
-                        context as Main,
-                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                        1
-                    )
-                    return@launch
-                } else {
-                    fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                        CoroutineScope(Dispatchers.IO).launch {
-                            val sharedPreferences = context.getSharedPreferences(
-                                "altermarkive.guardian_preferences",
-                                Context.MODE_PRIVATE
+            val fullScreenIntent = Intent(context, Main::class.java)
+            fullScreenIntent.flags =
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            val fullScreenPendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                fullScreenIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val builder =
+                NotificationCompat.Builder(context, context.resources.getString(R.string.app))
+            builder
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("FALL DETECTED")
+                .setContentText("Fall Detected!!! Clear the notification within 10 seconds to cancel the alarm. 10")
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setFullScreenIntent(fullScreenPendingIntent, true)
+                .setSilent(true)
+
+            with(NotificationManagerCompat.from(context)) {
+                notify(2, builder.build())
+            }
+
+            val mNotificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            var cancel = false
+
+            object : CountDownTimer(10000, 1000) {
+                var switch = false
+                override fun onTick(millisUntilFinished: Long) {
+                    if (switch) {
+                        switch = false
+                        val singleton = instance(context as Guardian)
+                        val pool = singleton.pool
+
+                        // Gradually increase the volume of the alarm
+                        val volume = Helper.clamp(10000 - millisUntilFinished.toDouble(), 0.0, 10000.0, 0.001, VOLUME.toDouble()).toFloat()
+                        Log.d("ms", millisUntilFinished.toString())
+                        Log.d("Alarm", volume.toString())
+                        pool.play(singleton.id, volume, volume, 1, 0, 1.0f)
+                    } else {
+                        switch = true
+                    }
+
+                    var notifFound = false
+
+                    val notifications = mNotificationManager.activeNotifications
+                    for (notification in notifications) {
+                        if (notification.id == 2) {
+                            notifFound = true
+
+                            builder.setContentText("Fall Detected!!! Clear the notification within 10 seconds to cancel the alarm. ${millisUntilFinished / 1000}")
+                            with(NotificationManagerCompat.from(context)) {
+                                notify(2, builder.build())
+                            }
+
+                            break
+                        }
+                    }
+
+                    if (!notifFound) {
+                        cancel = true
+                        cancel()
+                    }
+                }
+
+                override fun onFinish() {
+                    var notifFound = false
+                    for (notification in mNotificationManager.activeNotifications) {
+                        if (notification.id == 2) {
+                            mNotificationManager.cancel(2)
+                            notifFound = true
+                        }
+                    }
+
+                    if (!notifFound) {
+                        cancel = true
+                        cancel()
+                    }
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        if (ActivityCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            Toast.makeText(
+                                context,
+                                "Missing location permission. Cannot send fall report.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            ActivityCompat.requestPermissions(
+                                context as Main,
+                                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                                1
                             )
-                            val name = sharedPreferences.getString("name", "Unknown") ?: "Unknown"
+                            return@launch
+                        } else {
+                            fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+                            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    val sharedPreferences = context.getSharedPreferences(
+                                        "altermarkive.guardian_preferences",
+                                        Context.MODE_PRIVATE
+                                    )
+                                    val name = sharedPreferences.getString("name", "Unknown") ?: "Unknown"
 
-                            val requestBody = """
+                                    val requestBody = """
                         {
                             "lat": ${location.latitude},
                             "lng": ${location.longitude},
                             "name": "${name}"
                         }
                     """.trimIndent()
-                            val client = OkHttpClient()
-                            val request = okhttp3.Request.Builder()
-                                .url("http://10.75.118.219:9090/reportfall")
-                                .post(okhttp3.RequestBody.create(null, requestBody))
-                                .build()
-                            val response = client.newCall(request).execute()
-                            val responseCode = response.code
-                            Log.d("Alarm", responseCode.toString())
-                            if (responseCode == 200) {
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(context, "Fall report sent", Toast.LENGTH_SHORT)
-                                        .show()
-                                }
-                            } else {
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(
-                                        context,
-                                        "Failed to send fall report",
-                                        Toast.LENGTH_SHORT
-                                    )
-                                        .show()
+                                    val client = OkHttpClient()
+                                    val request = okhttp3.Request.Builder()
+                                        .url("http://10.75.118.219:9090/reportfall")
+                                        .post(okhttp3.RequestBody.create(null, requestBody))
+                                        .build()
+                                    val response = client.newCall(request).execute()
+                                    val responseCode = response.code
+                                    Log.d("Alarm", responseCode.toString())
+                                    if (responseCode == 200) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Fall report sent", Toast.LENGTH_SHORT)
+                                                .show()
+                                        }
+                                    } else {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(
+                                                context,
+                                                "Failed to send fall report",
+                                                Toast.LENGTH_SHORT
+                                            )
+                                                .show()
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            }
 
-            CoroutineScope(Dispatchers.Default).launch {
-                if (siren) {
-                    siren(context)
+                    CoroutineScope(Dispatchers.Default).launch {
+                        if (siren) {
+                            siren(context)
+                        }
+                    }
                 }
-            }
+            }.start()
         }
     }
 }
