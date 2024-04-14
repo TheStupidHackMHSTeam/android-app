@@ -27,10 +27,6 @@ class Upload internal constructor() {
                         val result = ipfs.add(wrapper)[0]
                         val url = "https://cloudflare-ipfs.com/ipfs/${result.hash.toBase58()}"
                         val message = "Uploaded: $url"
-                        val contact = Contact[context]
-                        if (contact != null && "" != contact) {
-                            Messenger.sms(context, Contact[context], message)
-                        }
                         Log.i(TAG, message)
                     } catch (exception: IOException) {
                         val failure = android.util.Log.getStackTraceString(exception)

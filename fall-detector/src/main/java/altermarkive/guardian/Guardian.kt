@@ -24,9 +24,9 @@ class Guardian : Service() {
         val channelName = "$channelId Background Service"
         val channel = NotificationChannel(
             channelId,
-            channelName, NotificationManager.IMPORTANCE_NONE
+            channelName, NotificationManager.IMPORTANCE_HIGH
         )
-        channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         service.createNotificationChannel(channel)
         return channelId
@@ -34,25 +34,6 @@ class Guardian : Service() {
 
     @SuppressLint("UnspecifiedImmutableFlag")
     override fun onStartCommand(intent: Intent, flags: Int, startID: Int): Int {
-        val now = System.currentTimeMillis()
-        val app = resources.getString(R.string.app)
-        val channelId =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                createNotificationChannel()
-            } else {
-                // If earlier version channel ID is not used
-                // https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#NotificationCompat.Builder(android.content.Context)
-                ""
-            }
-        val main = Intent(this, Main::class.java)
-        val pending = PendingIntent.getActivity(this, 0, main, 0)
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.stat_sys_warning)
-            .setContentTitle(app)
-            .setContentText("$app is active")
-            .setWhen(now)
-            .setContentIntent(pending).build()
-        startForeground(1, notification)
         return START_STICKY
     }
 

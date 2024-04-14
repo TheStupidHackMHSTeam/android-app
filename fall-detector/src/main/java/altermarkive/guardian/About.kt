@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 
 class About : Fragment(), View.OnClickListener {
     private var binding: View? = null
+    private lateinit var liveChatWebView: WebView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -25,8 +26,8 @@ class About : Fragment(), View.OnClickListener {
     ): View? {
         val binding = inflater.inflate(R.layout.about, container, false)
         this.binding = binding
-        val web = binding.findViewById<View>(R.id.information) as WebView
-        web.loadUrl("file:///android_asset/about.html")
+        liveChatWebView = binding.findViewById<View>(R.id.information) as WebView
+        liveChatWebView.loadUrl("file:///android_asset/about.html")
         val emergency = binding.findViewById<View>(R.id.emergency) as Button
         emergency.setOnClickListener(this)
         return binding
@@ -34,30 +35,12 @@ class About : Fragment(), View.OnClickListener {
 
     override fun onClick(view: View) {
         if (R.id.emergency == view.id) {
+            liveChatWebView.settings.domStorageEnabled = true
+            liveChatWebView.settings.javaScriptEnabled = true
+            liveChatWebView.loadUrl("http://192.168.19.117:9090")
             Alarm.alert(requireActivity().applicationContext)
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        refreshPermissions(true)
-    }
-
-    private fun refreshPermissions(request: Boolean) {
-        val statusText: String
-        val statusColor: Int
-        if (permitted(request)) {
-            statusText = "Permissions: Granted"
-            statusColor = Color.GREEN
-        } else {
-            statusText = "Permissions: Missing"
-            statusColor = Color.RED
-        }
-        val binding = this.binding ?: return
-        val status = binding.findViewById<View>(R.id.status) as TextView
-        activity?.runOnUiThread {
-            status.text = statusText
-            status.setTextColor(statusColor)
+            val emergency = this.binding?.findViewById<View>(R.id.emergency) as Button
+            emergency.visibility = View.GONE
         }
     }
 
@@ -96,7 +79,6 @@ class About : Fragment(), View.OnClickListener {
                     "ERROR: Permissions were not granted"
                 )
             }
-            refreshPermissions(false)
         }
 
     override fun onDestroyView() {

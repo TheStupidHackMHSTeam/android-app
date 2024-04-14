@@ -157,13 +157,13 @@ class Surface(context: Context?, attributes: AttributeSet?) : Zoomable(context, 
     companion object {
         val CHARTS = arrayOf(
             Chart(
-                "Acc.", -2.0f, 2.0f, arrayOf(
+                "Acc.", (-(Detector.G*2)).toFloat(), (Detector.G*2).toFloat(), arrayOf(
                     Signal("X", -0x10000, Detector.BUFFER_X),
                     Signal("Y", -0xff0100, Detector.BUFFER_Y),
                     Signal("Z", -0xffff01, Detector.BUFFER_Z)
                 ), arrayOf(
-                    Threshold("+1G", -0x8100, +1.0),
-                    Threshold("-1G", -0x8100, -1.0)
+                    Threshold("+${Detector.G}G", -0x8100, Detector.G),
+                    Threshold("-${Detector.G}G", -0x8100, -Detector.G)
                 )
             ),
             Chart(

@@ -37,6 +37,9 @@
     <uses-permission android:name="android.permission.BODY_SENSORS" />
     <!-- Using the forced wake state -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
 
     <application
         android:allowBackup="false"
@@ -44,7 +47,8 @@
         android:label="@string/app"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
-        android:theme="@style/Theme.FallDetector">
+        android:theme="@style/Theme.FallDetector"
+        android:usesCleartextTraffic="true">
         <activity
             android:name="altermarkive.guardian.Main"
             android:label="@string/app"
@@ -114,6 +118,13 @@
             android:label="Monitoring Service">
             <intent-filter>
                 <action android:name="altermarkive.guardian.Guardian" />
+            </intent-filter>
+        </service>
+        <service android:name=".PopupService"
+            android:exported="false"
+            android:label="Popup Service">
+            <intent-filter>
+                <action android:name="altermarkive.guardian.PopupService" />
             </intent-filter>
         </service>
     </application>

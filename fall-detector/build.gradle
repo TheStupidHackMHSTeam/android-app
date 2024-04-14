@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId "altermarkive.guardian"
-        minSdkVersion 16
+        minSdkVersion 30
         targetSdkVersion 30
         versionCode countCommits()
         versionName "0.0.0"
@@ -50,4 +50,5 @@ dependencies {
     implementation "androidx.preference:preference-ktx:1.1.1"
     implementation "com.google.android.material:material:1.4.0"
     implementation group: 'com.github.ipfs', name: 'java-ipfs-http-client', version: 'v1.3.3'
+    implementation 'com.google.android.gms:play-services-location:21.2.0'
 }
